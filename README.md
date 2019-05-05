@@ -1,6 +1,6 @@
-# <p style="text-align: center;">CVaPR_EEG_videos</p>
+# CVaPR_EEG_videos
 
-**<p style="text-align: center;">A project for Computer Vision and Pattern Recognition classes at Silesian University of Technology</p>**
+**A project for Computer Vision and Pattern Recognition classes at Silesian University of Technology**
 
 Lecturer: Krzysztof Kotowski  
 Semester: 1st semester of the MSc studies programme
