@@ -4,6 +4,7 @@ import os
 import _pickle as cPickle
 import matplotlib.pyplot as plt
 import EEG.EEG.eeg as eeg
+from mne.time_frequency import psd_array_welch
 
 
 path = "../DEAP/data_preprocessed_python"
@@ -86,5 +87,10 @@ for i in range(len(List_of_data) - 1):
             # plt.show()
 
             # matplotlib, rly?
-            plt.psd(data, NFFT=np.shape(data)[0], Fs=fs)
+            # plt.psd(data, NFFT=np.shape(data)[0], Fs=fs)
+            # plt.show()
+
+            psds, freqs = psd_array_welch(data, sfreq=fs, n_per_seg=7, n_fft=np.shape(data)[0])
+
+            plt.plot(freqs, psds)
             plt.show()
