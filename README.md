@@ -16,7 +16,10 @@ Let's determine some universal rules and project requirements (listed below):
     * required packages (please extend this list as you will introduce more packages):
         * Keras
         * TensorFlow
-        * NumPy (probably?)
+        * NumPy
+        * Matplotlib
+4. GPU usage
+    * there is a possibilty to use TensorFlow with computation acceleration on GPU. To utilise this feature, please install GPU-accelerated version of TensorFlow (TensorFlow-GPU) and additional necessary tools (CUDA Toolkit and CUDNN), listed in [TensorFlow website](https://www.tensorflow.org/install/gpu), in section Software Requirements
 
 Please extend this file as any new requirements will arise!  
 **That's all, folks! :)**
