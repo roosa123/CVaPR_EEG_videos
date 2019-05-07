@@ -18,6 +18,9 @@ Let's determine some universal rules and project requirements (listed below):
         * TensorFlow
         * NumPy
         * Matplotlib
+        * Pandas
+        * MNE
+        * couchdb
 4. GPU usage
     * there is a possibilty to use TensorFlow with computation acceleration on GPU. To utilise this feature, please install GPU-accelerated version of TensorFlow (TensorFlow-GPU) and additional necessary tools (CUDA Toolkit and CUDNN), listed in [TensorFlow website](https://www.tensorflow.org/install/gpu), in section Software Requirements
 
