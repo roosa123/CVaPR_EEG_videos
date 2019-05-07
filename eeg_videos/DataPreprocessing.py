@@ -1,9 +1,11 @@
+from __future__ import division
 import numpy as np
 import os
+import _pickle as cPickle
+import matplotlib.pyplot as plt
+
 
 path = "../data_preprocessed_python"
-
-# Lists of labels and data for all participants
 List_of_labels = []
 List_of_data = []
 files = []
@@ -13,11 +15,10 @@ for (_, _, sets) in os.walk(path):
 
 for file in files:
 
-    Participant_base = np.load(path + '/' + file, encoding='bytes', allow_pickle=True)
-
+    Participant_base = cPickle.load(open(path + '/' + file, 'rb'), encoding='latin1')
     # ----------Labels - four discrete  states---------------
 
-    Labels = Participant_base[b'labels']
+    Labels = Participant_base['labels']
     N, _ = Labels.shape
     Labels2 = np.zeros([N, 2])
 
@@ -44,8 +45,7 @@ for file in files:
 
     # -------------- Lists for labels and data------------------
 
-    Data = Participant_base[b'data']
-
+    Data = Participant_base['data']
     List_of_labels.append(Labels2)
     List_of_data.append(Data)
     # ----------------------------------------------------------
@@ -54,3 +54,17 @@ print(len(List_of_labels))
 print(len(List_of_data))
 
 #  Next step is to extract features from all packages of Data
+
+for i in range(len(List_of_data) - 1):
+    for j in range(len(List_of_data[i]) - 1):
+        for k in range(len(List_of_data[i][j]) - 1):
+            data = List_of_data[i][j][k]
+            ps = 10*np.log10(np.abs(np.fft.fft(data))**2)
+
+            time_step = 1 / 128
+            freqs = np.fft.fftfreq(data.size, time_step)
+            # freqs = np.abs(freqs)
+            idx = np.argsort(freqs)
+            plt.plot(freqs[idx], ps[idx])
+            plt.show()
+
