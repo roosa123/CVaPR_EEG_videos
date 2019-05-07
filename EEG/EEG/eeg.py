@@ -6,7 +6,7 @@ from matplotlib import gridspec
 import mne
 from mne import find_events
 from scipy.signal import resample, freqz_zpk, zpk2sos, sosfiltfilt, cheb2ord, iirdesign
-import couchdb
+# import couchdb
 import h5py
 import time
 
@@ -662,83 +662,83 @@ def filterAndDownsampleByChunk(raw, fs, newFS, chunkNum=10):
         # print i, ' done!'
     return data
 
-def getBehaviorData(dbAddress, dbName, sessionNum, recover=True):
-    """
-    Fetch behavior data from couchdb (SOA, SNR and trial duration).
-
-    Parameters
-    ----------
-    dbAddress : str
-        Path to the couch database.
-    dbName : str
-        Name of the database on the couch instance.
-    sessionNum : int
-        Behavior data will be fetched from this sessionNum.
-
-    Returns:
-
-    lookupTable : instance of pandas.core.DataFrame
-        A dataframe containing trial data.
-    """
-
-    couch = couchdb.Server(dbAddress)
-    db = couch[dbName]
-    lookupTable = pd.DataFrame(columns=['trialNum', 'SOA', 'SNR', 'targetRate',
-        'targetFreq','trialDur', 'soundStart', 'deviant', 'noise', 'target',
-        'score'])
-    count = 0
-    for docid in db.view('_all_docs'):
-        if (docid['id'].startswith('infMask_%d' % sessionNum)):
-            count += 1
-
-            trialNum = int(docid['id'].split('_')[-1])
-
-            if (db.get(docid['id'])['toneCloudParam'] is not None and recover):
-                doc = pd.DataFrame(db.get(docid['id']))
-
-                toneCloudLen = doc.toneCloudParam.shape[0]
-                trialDur = doc.trialDur[0]
-                toneCloud = pd.DataFrame(db.get(docid['id'])['toneCloudParam'])
-                soundStart = np.min(toneCloud['time'])
-                deviant = doc.deviant[0]
-                recoverNoise = doc.toneCloudParam[300]['gain']!=0
-                if ('targetSOA' in doc.columns):
-                    targetRate = 1/doc.targetSOA[0]
-                else:
-                    targetRate = None
-                targetFreq = doc.targetFreq[0]
-                SNR = doc.targetdB[0]
-                # target SOA can be infered from the number of tones in the cloud
-                if (toneCloudLen < 700):
-                    recoverTargetSOA = 4
-                elif ((toneCloudLen > 800) & (toneCloudLen < 1100)):
-                    recoverTargetSOA = 7
-                elif (toneCloudLen > 1300):
-                    recoverTargetSOA = 13
-                else:
-                    raise ValueError('check the value of toneCloudLen')
-
-            else:
-                doc = pd.Series(db.get(docid['id']))
-                trialDur = doc.trialDur
-                deviant = doc.deviant
-                targetFreq = doc.targetFreq
-                SNR = doc.targetdB
-                targetRate = 1/doc.targetSOA
-                soundStart = 0
-                recoverTargetSOA = None
-                recoverNoise = doc.noise
-                target=doc.target
-                score=doc.score
-
-
-            lookupTable.loc[count] = pd.Series({'trialNum': trialNum,
-                    'SOA': recoverTargetSOA, 'SNR': SNR, 'targetRate': targetRate,
-                    'targetFreq': targetFreq, 'trialDur': trialDur,
-                    'soundStart': soundStart, 'deviant': deviant,
-                    'noise': recoverNoise, 'target': target, 'score': score})
-
-    return lookupTable
+# def getBehaviorData(dbAddress, dbName, sessionNum, recover=True):
+#     """
+#     Fetch behavior data from couchdb (SOA, SNR and trial duration).
+#
+#     Parameters
+#     ----------
+#     dbAddress : str
+#         Path to the couch database.
+#     dbName : str
+#         Name of the database on the couch instance.
+#     sessionNum : int
+#         Behavior data will be fetched from this sessionNum.
+#
+#     Returns:
+#
+#     lookupTable : instance of pandas.core.DataFrame
+#         A dataframe containing trial data.
+#     """
+#
+#     couch = couchdb.Server(dbAddress)
+#     db = couch[dbName]
+#     lookupTable = pd.DataFrame(columns=['trialNum', 'SOA', 'SNR', 'targetRate',
+#         'targetFreq','trialDur', 'soundStart', 'deviant', 'noise', 'target',
+#         'score'])
+#     count = 0
+#     for docid in db.view('_all_docs'):
+#         if (docid['id'].startswith('infMask_%d' % sessionNum)):
+#             count += 1
+#
+#             trialNum = int(docid['id'].split('_')[-1])
+#
+#             if (db.get(docid['id'])['toneCloudParam'] is not None and recover):
+#                 doc = pd.DataFrame(db.get(docid['id']))
+#
+#                 toneCloudLen = doc.toneCloudParam.shape[0]
+#                 trialDur = doc.trialDur[0]
+#                 toneCloud = pd.DataFrame(db.get(docid['id'])['toneCloudParam'])
+#                 soundStart = np.min(toneCloud['time'])
+#                 deviant = doc.deviant[0]
+#                 recoverNoise = doc.toneCloudParam[300]['gain']!=0
+#                 if ('targetSOA' in doc.columns):
+#                     targetRate = 1/doc.targetSOA[0]
+#                 else:
+#                     targetRate = None
+#                 targetFreq = doc.targetFreq[0]
+#                 SNR = doc.targetdB[0]
+#                 # target SOA can be infered from the number of tones in the cloud
+#                 if (toneCloudLen < 700):
+#                     recoverTargetSOA = 4
+#                 elif ((toneCloudLen > 800) & (toneCloudLen < 1100)):
+#                     recoverTargetSOA = 7
+#                 elif (toneCloudLen > 1300):
+#                     recoverTargetSOA = 13
+#                 else:
+#                     raise ValueError('check the value of toneCloudLen')
+#
+#             else:
+#                 doc = pd.Series(db.get(docid['id']))
+#                 trialDur = doc.trialDur
+#                 deviant = doc.deviant
+#                 targetFreq = doc.targetFreq
+#                 SNR = doc.targetdB
+#                 targetRate = 1/doc.targetSOA
+#                 soundStart = 0
+#                 recoverTargetSOA = None
+#                 recoverNoise = doc.noise
+#                 target=doc.target
+#                 score=doc.score
+#
+#
+#             lookupTable.loc[count] = pd.Series({'trialNum': trialNum,
+#                     'SOA': recoverTargetSOA, 'SNR': SNR, 'targetRate': targetRate,
+#                     'targetFreq': targetFreq, 'trialDur': trialDur,
+#                     'soundStart': soundStart, 'deviant': deviant,
+#                     'noise': recoverNoise, 'target': target, 'score': score})
+#
+#     return lookupTable
 
 def getEvents(raw, eventCode, shortest_event=None):
     """

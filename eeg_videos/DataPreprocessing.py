@@ -4,9 +4,10 @@ import os
 import _pickle as cPickle
 import matplotlib.pyplot as plt
 import EEG.EEG.eeg as eeg
+from mne.time_frequency import psd_array_welch
 
 
-path = "../data_preprocessed_python"
+path = "../DEAP/data_preprocessed_python"
 List_of_labels = []
 List_of_data = []
 files = []
@@ -73,8 +74,8 @@ for i in range(len(List_of_data) - 1):
             freqs, ps = eeg.computeFFT(data, fs=128)
             idx = np.argsort(freqs)
 
-
             plt.plot(freqs[idx], ps[idx])
             plt.title(label=(files[i] + " video: " + str(j + 1) + " chanel: " + str(k + 1)))
             plt.show()
 
+            psd_array_welch(data, )
