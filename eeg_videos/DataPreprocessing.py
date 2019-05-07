@@ -3,6 +3,7 @@ import numpy as np
 import os
 import _pickle as cPickle
 import matplotlib.pyplot as plt
+import EEG.EEG.eeg as eeg
 
 
 path = "../data_preprocessed_python"
@@ -59,12 +60,21 @@ for i in range(len(List_of_data) - 1):
     for j in range(len(List_of_data[i]) - 1):
         for k in range(len(List_of_data[i][j]) - 1):
             data = List_of_data[i][j][k]
-            ps = 10*np.log10(np.abs(np.fft.fft(data))**2)
 
-            time_step = 1 / 128
-            freqs = np.fft.fftfreq(data.size, time_step)
-            # freqs = np.abs(freqs)
+            # kod Marcela
+            # ps = 10*np.log10(np.abs(np.fft.fft(data))**2)
+            # time_step = 1 / 128
+            # freqs = np.fft.fftfreq(data.size, time_step)
+            # N = len(freqs)
+            # freqs = np.abs(freqs[0:N//2])
+            # idx = np.argsort(freqs)
+
+            # kod znaleziony
+            freqs, ps = eeg.computeFFT(data, fs=128)
             idx = np.argsort(freqs)
+
+
             plt.plot(freqs[idx], ps[idx])
+            plt.title(label=(files[i] + " video: " + str(j + 1) + " chanel: " + str(k + 1)))
             plt.show()
 
