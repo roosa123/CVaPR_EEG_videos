@@ -186,3 +186,5 @@ fabric.properties
 .idea/sonarlint
 /DEAP/metadata_xls
 /DEAP/data_preprocessed_python
+/DEAP/img
+/DEAP/metadata_xls

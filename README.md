@@ -1,6 +1,6 @@
-# CVaPR_EEG_videos
+# Emotion Recognition in Videos From EEG Signals Using Deep Neural Networks
 
-**A project for Computer Vision and Pattern Recognition classes at Silesian University of Technology**
+## A project for Computer Vision and Pattern Recognition classes at Silesian University of Technology
 
 Lecturer: Krzysztof Kotowski  
 Semester: 1st semester of the MSc studies programme
@@ -20,9 +20,11 @@ Let's determine some universal rules and project requirements (listed below):
         * Matplotlib
         * Pandas
         * MNE
-        * couchdb
+        * SciPy
 4. GPU usage
-    * there is a possibilty to use TensorFlow with computation acceleration on GPU. To utilise this feature, please install GPU-accelerated version of TensorFlow (TensorFlow-GPU) and additional necessary tools (CUDA Toolkit and CUDNN), listed in [TensorFlow website](https://www.tensorflow.org/install/gpu), in section Software Requirements
+    * there is a possibilty to use TensorFlow with computation acceleration on GPU. To utilise this feature, please install GPU-accelerated version of TensorFlow (TensorFlow-GPU) and additional necessary tools (CUDA Toolkit and CuDNN), listed in [TensorFlow website](https://www.tensorflow.org/install/gpu), in section Software Requirements
+    * pay attention to the versions - TensorFlow **1.13** will work only with CUDA Toolkit **10.0** (and probably higher)
+    * make sure you've added CuDNN path to your PATH variable!
 
 Please extend this file as any new requirements will arise!  
 **That's all, folks! :)**
