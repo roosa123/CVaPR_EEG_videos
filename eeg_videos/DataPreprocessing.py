@@ -9,6 +9,7 @@ import EEG.EEG.eeg as eeg
 from mne.time_frequency import psd_array_welch
 from scipy.integrate import simps
 from scipy.interpolate import griddata
+from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
@@ -84,41 +85,6 @@ directory = '..\\DEAP\\img\\'
 
 # ===================================================
 
-train_data = ImageDataGenerator(
-    rotation_range=120,
-    horizontal_flip=True,
-    height_shift_range=0.6,
-    width_shift_range=0.6,
-).flow_from_directory(
-    '..\\DEAP\\img',
-    target_size=(9, 9),
-    batch_size=8
-)
-
-model = Sequential()
-
-model.add(Conv2D(32, (5, 5), activation='relu', input_shape=(9, 9, 4)))
-
-model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
-model.add(Dropout(0.4))
-
-model.add(Flatten())
-
-model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(2, activation='softmax'))
-
-model.compile(loss='categorical_crossentropy',
-              optimizer='adam',
-              metrics=['accuracy'])
-
-# model.fit_generator(
-#     train_data,
-#     steps_per_epoch=64,
-#     epochs=3,
-#     validation_steps=2
-# )
-
 for i in range(len(List_of_data)):
     for j in range(len(List_of_data[i])):
         avg_band_power = np.zeros((9, 9, 4))
@@ -138,16 +104,16 @@ for i in range(len(List_of_data)):
             freqs, ps = eeg.computeFFT(data, fs=fs)
             idx = np.argsort(freqs)
 
-            # plt.plot(freqs[idx], ps[idx])
-            # plt.title(label=(files[i] + " video: " + str(j + 1) + " chanel: " + str(k + 1)))
-            # plt.show()
+            plt.plot(freqs[idx], ps[idx])
+            plt.title(label=(files[i] + " video: " + str(j + 1) + " chanel: " + str(k + 1)))
+            plt.show()
 
             # PSD
 
             psds, freqs = psd_array_welch(data, sfreq=fs, n_per_seg=7, n_fft=np.shape(data)[0])
 
-            # plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
-            # plt.show()
+            plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
+            plt.show()
 
             # 1. find average band powers (for alpha, beta, gamma and theta bands)
             freq_bands = {
@@ -166,45 +132,6 @@ for i in range(len(List_of_data)):
                 avg_power.append(avg)
 
             avg_band_power[channel_positions[k][0]][channel_positions[k][1]] = avg_power
-
-            # def func(x, y):
-            #     return x * (1 - x) * np.cos(4 * np.pi * x) * np.sin(4 * np.pi * y ** 2) ** 2
-            #
-            #
-            # grid_x, grid_y = np.mgrid[0:1:100j, 0:1:200j]
-            # points = np.random.rand(1000, 2)
-            # values = func(points[:, 0], points[:, 1])
-            #
-            # from scipy.interpolate import griddata
-            # grid_z0 = griddata(points, values, (grid_x, grid_y), method='nearest')
-            # grid_z1 = griddata(points, values, (grid_x, grid_y), method='linear')
-            # grid_z2 = griddata(points, values, (grid_x, grid_y), method='cubic')
-            #
-            # print(np.max(grid_z0))
-            # print(np.max(grid_z1))
-            # print(np.max(grid_z2))
-            #
-            # print(np.min(grid_z0))
-            # print(np.min(grid_z1))
-            # print(np.min(grid_z2))
-            #
-            # plt.subplot(221)
-            # plt.imshow(func(grid_x, grid_y).T, extent=(0, 1, 0, 1), origin='lower')
-            # plt.plot(points[:, 0], points[:, 1], 'k.', ms=1)
-            # plt.title('Original')
-            # plt.subplot(222)
-            # plt.imshow(grid_z0.T, extent=(0, 1, 0, 1), origin='lower')
-            # plt.title('Nearest')
-            # plt.subplot(223)
-            # plt.imshow(grid_z1.T, extent=(0, 1, 0, 1), origin='lower')
-            # plt.title('Linear')
-            # plt.subplot(224)
-            # plt.imshow(grid_z2.T, extent=(0, 1, 0, 1), origin='lower')
-            # plt.title('Cubic')
-            # plt.gcf().set_size_inches(6, 6)
-            # plt.show()
-            #
-            # pass
 
         # 2. calculate unknown points in the feature matrix
         # start from the middle, so the matrix filling won't ever start from a place surrounded by zeros
@@ -281,7 +208,53 @@ for i in range(len(List_of_data)):
 
         cur_dir = directory + str(List_of_labels[i][j][1])
 
-        if not os.path.exists(cur_dir):
-            os.makedirs(cur_dir)
+        # if not os.path.exists(cur_dir):
+        #     os.makedirs(cur_dir)
+
+        a = np.array(out)
+        img = np.rollaxis(a, 2)
+        img = np.rollaxis(img, 2)
 
         np.save(cur_dir + '\\' + str(i) + str(j) + '.npy', np.array(out))
+
+train_data = ImageDataGenerator(
+    rotation_range=120,
+    horizontal_flip=True,
+    height_shift_range=0.6,
+    width_shift_range=0.6,
+).flow_from_directory(
+    '..\\DEAP\\img',
+    target_size=(120, 120),
+    batch_size=8
+)
+
+model = Sequential()
+
+model.add(Conv2D(32, (5, 5), activation='relu', input_shape=(120, 120, 4)))
+model.add(Conv2D(32, (2, 2), activation='relu', input_shape=(120, 120, 4)))
+
+model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
+model.add(Dropout(0.5))
+
+model.add(Conv2D(16, (5, 5), activation='relu'))
+model.add(Conv2D(8, (2, 2), activation='relu'))
+
+model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
+model.add(Dropout(0.3))
+
+model.add(Flatten())
+
+model.add(Dense(512, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(2, activation='softmax'))
+
+model.compile(loss='categorical_crossentropy',
+              optimizer='adam',
+              metrics=['accuracy'])
+
+model.fit_generator(
+    train_data,
+    steps_per_epoch=64,
+    epochs=15,
+    validation_steps=2
+)
