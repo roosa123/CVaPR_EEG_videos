@@ -21,6 +21,7 @@ Let's determine some universal rules and project requirements (listed below):
         * Pandas
         * MNE
         * SciPy
+    * if you wish to plot the model of the network, you should install [Graphviz](https://www.graphviz.org) and pydot package
 4. GPU usage
     * there is a possibilty to use TensorFlow with computation acceleration on GPU. To utilise this feature, please install GPU-accelerated version of TensorFlow (TensorFlow-GPU) and additional necessary tools (CUDA Toolkit and CuDNN), listed in [TensorFlow website](https://www.tensorflow.org/install/gpu), in section Software Requirements
     * pay attention to the versions - TensorFlow **1.13** will work only with CUDA Toolkit **10.0** (and probably higher)

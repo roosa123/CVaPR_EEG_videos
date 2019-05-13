@@ -13,6 +13,7 @@ from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from keras.utils import plot_model
 
 
 path = "../DEAP/data_preprocessed_python"
@@ -231,7 +232,7 @@ train_data = ImageDataGenerator(
 model = Sequential()
 
 model.add(Conv2D(32, (5, 5), activation='relu', input_shape=(120, 120, 4)))
-model.add(Conv2D(32, (2, 2), activation='relu', input_shape=(120, 120, 4)))
+model.add(Conv2D(32, (2, 2), activation='relu'))
 
 model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
 model.add(Dropout(0.5))
@@ -246,11 +247,16 @@ model.add(Flatten())
 
 model.add(Dense(512, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(2, activation='softmax'))
+model.add(Dense(4, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy',
               optimizer='adam',
               metrics=['accuracy'])
+
+try:
+    plot_model(model, to_file="model.jpg", show_layer_names=True, show_shapes=True)
+except:
+    print("Unable to plot the model architecture - have you got installed Graphviz and/or pydot?\nSkipping plotting.\n")
 
 model.fit_generator(
     train_data,
