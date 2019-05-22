@@ -9,11 +9,11 @@ import EEG.EEG.eeg as eeg
 from mne.time_frequency import psd_array_welch
 from scipy.integrate import simps
 from scipy.interpolate import griddata
-from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.utils import plot_model
+from eeg_videos.DataGenerator import NpyDataGenerator
 
 
 path = "../DEAP/data_preprocessed_python"
@@ -209,25 +209,18 @@ for i in range(len(List_of_data)):
 
         cur_dir = directory + str(List_of_labels[i][j][1])
 
-        # if not os.path.exists(cur_dir):
-        #     os.makedirs(cur_dir)
+        if not os.path.exists(cur_dir):
+            os.makedirs(cur_dir)
 
         a = np.array(out)
         img = np.rollaxis(a, 2)
         img = np.rollaxis(img, 2)
 
-        np.save(cur_dir + '\\' + str(i) + str(j) + '.npy', np.array(out))
+        np.save(cur_dir + '\\' + str(i) + str(j) + '.npy', np.array(img))
 
-train_data = ImageDataGenerator(
-    rotation_range=120,
-    horizontal_flip=True,
-    height_shift_range=0.6,
-    width_shift_range=0.6,
-).flow_from_directory(
-    '..\\DEAP\\img',
-    target_size=(120, 120),
-    batch_size=8
-)
+train_data = NpyDataGenerator().flow_from_dir(directory='..\\DEAP\\img',
+                                              batch_size=8,
+                                              shape=(120, 120, 4))
 
 model = Sequential()
 
