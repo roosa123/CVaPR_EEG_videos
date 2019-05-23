@@ -1,5 +1,6 @@
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from keras.callbacks import ModelCheckpoint
 from keras.utils import plot_model
 from eeg_videos.DataGenerator import NpyDataGenerator
 from eeg_videos.DataPreprocessing import normalize
@@ -31,11 +32,11 @@ def build_model(input_shape):
                   metrics=['accuracy'])
 
     try:
-        plot_model(model, to_file="model.jpg", show_layer_names=True, show_shapes=True)
+        plot_model(model, to_file='model.jpg', show_layer_names=True, show_shapes=True)
     except ImportError:
-        print("Unable to plot the model architecture - have you got installed pydot?\nSkipping plotting.\n")
+        print('Unable to plot the model architecture - have you got installed pydot?\nSkipping plotting.\n')
     except OSError:
-        print("Unable to plot the model architecture - have you got installed Graphviz?\nSkipping plotting.\n")
+        print('Unable to plot the model architecture - have you got installed Graphviz?\nSkipping plotting.\n')
 
     return model
 
@@ -54,13 +55,27 @@ def train(model, directory, batch_size, input_shape, validation_split):
                                                 validation_split=validation_split,
                                                 training_set=False)
 
-    model.fit_generator(
-        train_data,
-        steps_per_epoch=64,
-        epochs=15,
-        validation_steps=2,
-        validation_data=val_data)
+    checkpoint = ModelCheckpoint('best_model', monitor='val_loss', save_best_only=True)
+
+    model.fit_generator(train_data,
+                        steps_per_epoch=64,
+                        epochs=15,
+                        validation_steps=2,
+                        callbacks=[checkpoint],
+                        validation_data=val_data)
 
 
-def classify():
-    raise NotImplementedError('Implement me :)')
+def classify(input_shape, test_dir):
+    test_data = NpyDataGenerator().flow_from_dir(directory=test_dir,
+                                                 shape=input_shape,
+                                                 preprocessing_function=normalize,
+                                                 batch_size=8,
+                                                 shuffle=False)
+
+    model = load_model('best_model')
+
+    output = model.predict_generator(test_data, steps=len(test_data), verbose=1)
+
+    print(output)
+
+    raise NotImplementedError('Finish me :)')

@@ -7,5 +7,5 @@ if __name__ == '__main__':
     split_data(test_split=0.3)
     in_shape = (120, 120, 4)
     network = build_model(input_shape=in_shape)
-    train(network, directory='..\\DEAP\\img', batch_size=8, input_shape=in_shape, validation_split=0.3)
-    classify()
+    train(network, directory='..\\DEAP\\train', batch_size=8, input_shape=in_shape, validation_split=0.3)
+    classify(input_shape=in_shape, test_dir='')

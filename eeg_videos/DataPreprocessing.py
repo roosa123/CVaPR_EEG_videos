@@ -16,7 +16,7 @@ def normalize(sample):
 
 
 def load_data():
-    path = "../DEAP/data_preprocessed_python"
+    path = '../DEAP/data_preprocessed_python'
     list_of_labels = []
     list_of_data = []
     files = []
@@ -108,7 +108,7 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
                 idx = np.argsort(freqs)
 
                 plt.plot(freqs[idx], ps[idx])
-                plt.title(label=(files[i] + " video: " + str(j + 1) + " chanel: " + str(k + 1)))
+                plt.title(label=(files[i] + ' video: ' + str(j + 1) + ' chanel: ' + str(k + 1)))
                 plt.show()
 
                 # PSD
@@ -214,11 +214,9 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
             if not os.path.exists(cur_dir):
                 os.makedirs(cur_dir)
 
-            a = np.array(out)
-            img = np.rollaxis(a, 2)
-            img = np.rollaxis(img, 2)
+            out = np.rollaxis(np.rollaxis(np.array(out), 2), 2)
 
-            np.save(cur_dir + '\\' + str(i) + str(j) + '.npy', np.array(img))
+            np.save(cur_dir + '\\' + str(i) + str(j) + '.npy', np.array(out))
 
 
 def split_data(test_split):
