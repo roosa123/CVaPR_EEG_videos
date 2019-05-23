@@ -10,9 +10,10 @@ class NpyDataGenerator:
 
     def flow_from_dir(self,
                       directory,
-                      batch_size,
-                      shape,
+                      batch_size=8,
+                      shape=(120, 120),
                       validation_split=0.0,
+                      preprocessing_function=None,
                       training_set=None,
                       classes=None,
                       dtype='float32',
@@ -23,6 +24,7 @@ class NpyDataGenerator:
                         shape=shape,
                         extensions=self.extensions,
                         validation_split=validation_split,
+                        preprocessing_function=preprocessing_function,
                         training_set=training_set,
                         classes=classes,
                         dtype=dtype,
@@ -36,6 +38,7 @@ class Iterator(Sequence):
                  shape,
                  extensions,
                  validation_split=0.0,
+                 preprocessing_function=None,
                  training_set=None,
                  classes=None,
                  dtype='float32',
@@ -47,6 +50,7 @@ class Iterator(Sequence):
         self.dtype = dtype
         self.extensions = extensions
         self.validation_split = validation_split
+        self.preprocessing_function = preprocessing_function
         self.classes = classes
         self.batch_index = 0
         self.total_batches_seen = 0
@@ -156,6 +160,11 @@ class Iterator(Sequence):
 
         for i, j in enumerate(indices_array):
             data_x = np.load(self.filepaths[j])
+
+            # if preprocessing function is specified, apply it
+            if self.preprocessing_function is not None:
+                data_x = self.preprocessing_function(data_x)
+
             x[i] = data_x
 
         # build batch of labels
