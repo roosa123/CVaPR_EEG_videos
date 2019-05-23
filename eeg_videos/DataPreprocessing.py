@@ -219,3 +219,7 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
             img = np.rollaxis(img, 2)
 
             np.save(cur_dir + '\\' + str(i) + str(j) + '.npy', np.array(img))
+
+
+def split_data(test_split):
+    raise NotImplementedError('Implement me :)')

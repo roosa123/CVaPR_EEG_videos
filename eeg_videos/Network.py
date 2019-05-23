@@ -1,8 +1,8 @@
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.utils import plot_model
-from .DataGenerator import NpyDataGenerator
-from .DataPreprocessing import normalize
+from eeg_videos.DataGenerator import NpyDataGenerator
+from eeg_videos.DataPreprocessing import normalize
 
 
 def build_model(input_shape):
