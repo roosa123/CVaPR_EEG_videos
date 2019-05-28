@@ -60,6 +60,9 @@ class Iterator(Sequence):
         if training_set is None:
             self.split = None
         else:
+            if self.validation_split < 0. or self.validation_split > 1.:
+                raise ValueError('Validation split value should be between 0 and 1!')
+
             self.split = (0, self.validation_split) if not training_set else (self.validation_split, 1)
 
         self.n_samples = 0

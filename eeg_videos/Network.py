@@ -7,13 +7,17 @@ from eeg_videos.DataPreprocessing import normalize
 
 
 def build_model(input_shape):
+    """"
+    This function builds the model and returns it - for now, it is idle, empty, stupid and totally uneducated.
+    :param input_shape: the shape of the samples
+    """
     model = Sequential()
 
-    model.add(Conv2D(32, (5, 5), activation='relu', input_shape=input_shape))
+    model.add(Conv2D(32, (5, 5), activation='relu', input_shape=input_shape))       # adding convolutional layers...
     model.add(Conv2D(32, (2, 2), activation='relu'))
 
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
-    model.add(Dropout(0.5))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=2))                            # adding max pooling layers...
+    model.add(Dropout(0.5))                                                         # adding dropout layers....
 
     model.add(Conv2D(16, (5, 5), activation='relu'))
     model.add(Conv2D(8, (2, 2), activation='relu'))
@@ -21,15 +25,15 @@ def build_model(input_shape):
     model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
     model.add(Dropout(0.3))
 
-    model.add(Flatten())
+    model.add(Flatten())                        # flattening the data, so it can be passed to fully connected classifier
 
-    model.add(Dense(512, activation='relu'))
+    model.add(Dense(512, activation='relu'))    # adding fully connected layers...
     model.add(Dropout(0.5))
     model.add(Dense(4, activation='softmax'))
 
     model.compile(loss='categorical_crossentropy',
                   optimizer='adam',
-                  metrics=['accuracy'])
+                  metrics=['accuracy'])         # compile the model
 
     try:
         plot_model(model, to_file='model.jpg', show_layer_names=True, show_shapes=True)
@@ -42,6 +46,15 @@ def build_model(input_shape):
 
 
 def train(model, directory, batch_size, input_shape, validation_split):
+    """
+    This function prepares the data generators (cool stuff, which will load the data from the
+    hard drive dynamically, during training) and then - the coolest thing - trains the network.
+    :param model: model
+    :param directory: the directory from which data should be loaded
+    :param batch_size: size of the batch of samples
+    :param input_shape: shape of the samples
+    :param validation_split: amount of the data, which should be treated as validation set. Should be in range [0, 1]
+    """
     train_data = NpyDataGenerator().flow_from_dir(directory=directory,
                                                   batch_size=batch_size,
                                                   shape=input_shape,
@@ -66,6 +79,14 @@ def train(model, directory, batch_size, input_shape, validation_split):
 
 
 def classify(input_shape, test_dir):
+    """
+    This functions attempts to classify samples from the test set.
+    And then...
+    TO BE CONTINUED :)
+    :param input_shape:
+    :param test_dir:
+    :return:
+    """
     test_data = NpyDataGenerator().flow_from_dir(directory=test_dir,
                                                  shape=input_shape,
                                                  preprocessing_function=normalize,
