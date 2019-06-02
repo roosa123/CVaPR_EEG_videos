@@ -67,33 +67,54 @@ def train(model, directory, batch_size, input_shape, validation_split, method, k
     if method == 'kfold':
 
         final_directory = '..\\DEAP\\sets_kfold\\'
-        directories, test_directories = kfold_data_sets(directory=directory,
-                                                        final_directory=final_directory,
-                                                        k=k,
-                                                        method='random_var')
+        directories, validation_directories = kfold_data_sets(directory=directory,
+                                                              final_directory=final_directory,
+                                                              k=k,
+                                                              method='random_var')
+
+        for i, directory_set in enumerate(directories):
+            train_data = NpyDataGenerator().flow_from_dir(directory=directory_set,
+                                                          batch_size=batch_size,
+                                                          shape=input_shape,
+                                                          preprocessing_function=normalize,
+                                                          validation_split=0.0,
+                                                          training_set=True)
+
+            val_data = NpyDataGenerator().flow_from_dir(directory=validation_directories[i],
+                                                        shape=input_shape,
+                                                        preprocessing_function=normalize,
+                                                        validation_split=1.0,
+                                                        training_set=False)
+
+            checkpoint = ModelCheckpoint('best_model', monitor='val_loss', save_best_only=True)
+
+            model.fit_generator(train_data,
+                                steps_per_epoch=64,
+                                epochs=15,
+                                validation_steps=2,
+                                callbacks=[checkpoint],
+                                validation_data=val_data)
+
+            '''
+            I thought about classification here, as using KFold technique, classification would be done on the 
+            proper Test set of data after each iteration. But I don't know if it's a right option in the case, so I
+            just leave it like that in here : ) 
+
+
+            output = classify(input_shape, test_directories[i])
+
+            '''
 
     elif method == 'simple':
 
-        final_directory = '..\\DEAP\\sets_simple\\'
-        directories, test_directories = split_data(directory=directory,
-                                                   final_directory=final_directory,
-                                                   train_split=train_split)
-
-    else:
-
-        print('Wrong method')
-        return 0
-
-    for i, directory_set in enumerate(directories):
-
-        train_data = NpyDataGenerator().flow_from_dir(directory=directory_set,
+        train_data = NpyDataGenerator().flow_from_dir(directory=directory,
                                                       batch_size=batch_size,
                                                       shape=input_shape,
                                                       preprocessing_function=normalize,
                                                       validation_split=validation_split,
                                                       training_set=True)
 
-        val_data = NpyDataGenerator().flow_from_dir(directory=directory_set,
+        val_data = NpyDataGenerator().flow_from_dir(directory=directory,
                                                     shape=input_shape,
                                                     preprocessing_function=normalize,
                                                     validation_split=validation_split,
@@ -108,17 +129,11 @@ def train(model, directory, batch_size, input_shape, validation_split, method, k
                             callbacks=[checkpoint],
                             validation_data=val_data)
 
-        '''
-        I thought about classification here, as using KFold technique, classification would be done on the 
-        proper Test set of data after each iteration. But I don't know if it's a right option in the case, so I
-        just leave it like that in here : ) 
-        
-        
-        output = classify(input_shape, test_directories[i])
-        
-        '''
+    else:
 
-    return test_directories
+        print('Wrong method')
+        return 0
+
 
 
 def classify(input_shape, test_dir):
