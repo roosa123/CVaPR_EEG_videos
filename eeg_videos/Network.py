@@ -3,7 +3,7 @@ from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.callbacks import ModelCheckpoint
 from keras.utils import plot_model
 from eeg_videos.DataGenerator import NpyDataGenerator
-from eeg_videos.DataPreprocessing import normalize
+from eeg_videos.DataPreprocessing import normalize, kfold_data_sets, split_data
 
 
 def build_model(input_shape):
@@ -45,40 +45,84 @@ def build_model(input_shape):
     return model
 
 
-def train(model, directory, batch_size, input_shape, validation_split):
+def train(model, directory, batch_size, input_shape, validation_split, method, k=200, train_split=0.9):
+
     """
     This function prepares the data generators (cool stuff, which will load the data from the
     hard drive dynamically, during training) and then - the coolest thing - trains the network.
+    The coolest training can be maintained using Kfold method on prepared data-sets or simple one using one data set
+    separated from
     :param model: model
     :param directory: the directory from which data should be loaded
     :param batch_size: size of the batch of samples
     :param input_shape: shape of the samples
     :param validation_split: amount of the data, which should be treated as validation set. Should be in range [0, 1]
+    :param method: specifying method of maintaining input data and training (Kfold, simple)
+    :param k: (optional, default 200) parameter k for Kfold method
+    :param train_split: (optional, default 0.9) percentage of data used for training
+    :return function returns test directory/ies for prosecuted training
+
     """
-    train_data = NpyDataGenerator().flow_from_dir(directory=directory,
-                                                  batch_size=batch_size,
-                                                  shape=input_shape,
-                                                  preprocessing_function=normalize,
-                                                  validation_split=validation_split,
-                                                  training_set=True)
 
-    val_data = NpyDataGenerator().flow_from_dir(directory=directory,
-                                                shape=input_shape,
-                                                preprocessing_function=normalize,
-                                                validation_split=validation_split,
-                                                training_set=False)
+    if method == 'kfold':
 
-    checkpoint = ModelCheckpoint('best_model', monitor='val_loss', save_best_only=True)
+        final_directory = '..\\DEAP\\sets_kfold\\'
+        directories, test_directories = kfold_data_sets(directory=directory,
+                                                        final_directory=final_directory,
+                                                        k=k,
+                                                        method='random_var')
 
-    model.fit_generator(train_data,
-                        steps_per_epoch=64,
-                        epochs=15,
-                        validation_steps=2,
-                        callbacks=[checkpoint],
-                        validation_data=val_data)
+    elif method == 'simple':
+
+        final_directory = '..\\DEAP\\sets_simple\\'
+        directories, test_directories = split_data(directory=directory,
+                                                   final_directory=final_directory,
+                                                   train_split=train_split)
+
+    else:
+
+        print('Wrong method')
+        return 0
+
+    for i, directory_set in enumerate(directories):
+
+        train_data = NpyDataGenerator().flow_from_dir(directory=directory_set,
+                                                      batch_size=batch_size,
+                                                      shape=input_shape,
+                                                      preprocessing_function=normalize,
+                                                      validation_split=validation_split,
+                                                      training_set=True)
+
+        val_data = NpyDataGenerator().flow_from_dir(directory=directory_set,
+                                                    shape=input_shape,
+                                                    preprocessing_function=normalize,
+                                                    validation_split=validation_split,
+                                                    training_set=False)
+
+        checkpoint = ModelCheckpoint('best_model', monitor='val_loss', save_best_only=True)
+
+        model.fit_generator(train_data,
+                            steps_per_epoch=64,
+                            epochs=15,
+                            validation_steps=2,
+                            callbacks=[checkpoint],
+                            validation_data=val_data)
+
+        '''
+        I thought about classification here, as using KFold technique, classification would be done on the 
+        proper Test set of data after each iteration. But I don't know if it's a right option in the case, so I
+        just leave it like that in here : ) 
+        
+        
+        output = classify(input_shape, test_directories[i])
+        
+        '''
+
+    return test_directories
 
 
 def classify(input_shape, test_dir):
+
     """
     This functions attempts to classify samples from the test set.
     And then...
@@ -100,3 +144,6 @@ def classify(input_shape, test_dir):
     print(output)
 
     raise NotImplementedError('Finish me :)')
+
+
+
