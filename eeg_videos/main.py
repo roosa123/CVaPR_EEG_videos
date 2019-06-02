@@ -10,6 +10,8 @@ if __name__ == '__main__':
     in_shape = (120, 120, 4)
     network = build_model(input_shape=in_shape)
     print('The model has been successfully built. Attempting to train ti...')
-    train(network, directory='..\\DEAP\\train', batch_size=8, input_shape=in_shape, validation_split=0.3)
+    train(network, directory='..\\DEAP\\train',
+          batch_size=8, input_shape=in_shape,
+          validation_split=0.3, method='kfold')
     print('The model has been successfully trained. Attempting to classify some cool samples from the test set...')
     classify(input_shape=in_shape, test_dir='')
