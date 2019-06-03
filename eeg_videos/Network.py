@@ -50,6 +50,8 @@ def train(model, directory, batch_size, input_shape, validation_split, method, k
     """
     This function prepares the data generators (cool stuff, which will load the data from the
     hard drive dynamically, during training) and then - the coolest thing - trains the network.
+    The coolest training can be maintained using Kfold method on prepared data-sets or simple one using one data set
+    separated from
     :param model: model
     :param directory: the directory from which data should be loaded
     :param batch_size: size of the batch of samples
@@ -58,19 +60,30 @@ def train(model, directory, batch_size, input_shape, validation_split, method, k
     :param method: specifying method of maintaining input data and training (Kfold, simple)
     :param k: (optional, default 200) parameter k for Kfold method
     :param train_split: (optional, default 0.9) percentage of data used for training
-    :return 
+    :return function returns test directory/ies for prosecuted training
 
     """
 
     if method == 'kfold':
 
         final_directory = '..\\DEAP\\sets_kfold'
-        directories, validation_directories = kfold_data_sets(directory=directory,
-                                                              final_directory=final_directory,
-                                                              k=k,
-                                                              method='random_var')
+        result = kfold_data_sets(directory=directory,
+                                 final_directory=final_directory,
+                                 k=k,
+                                 method='random_var')
+
+        if result == 1:
+            print('Error while computing sets')
+            return 1
+        else:
+            directories = result[0]
+            validation_directories = result[1]
+
+        print(directories)
 
         for i, directory_set in enumerate(directories):
+
+            print('Training iteration: ', i+1)
             train_data = NpyDataGenerator().flow_from_dir(directory=directory_set,
                                                           batch_size=batch_size,
                                                           shape=input_shape,
@@ -88,20 +101,12 @@ def train(model, directory, batch_size, input_shape, validation_split, method, k
 
             model.fit_generator(train_data,
                                 steps_per_epoch=64,
-                                epochs=15,
+                                epochs=5,
                                 validation_steps=2,
                                 callbacks=[checkpoint],
                                 validation_data=val_data)
 
-            '''
-            I thought about classification here, as using KFold technique, classification would be done on the 
-            proper Test set of data after each iteration. But I don't know if it's a right option in the case, so I
-            just leave it like that in here : ) 
-
-
-            output = classify(input_shape, test_directories[i])
-
-            '''
+        return 0
 
     elif method == 'simple':
 
@@ -127,11 +132,12 @@ def train(model, directory, batch_size, input_shape, validation_split, method, k
                             callbacks=[checkpoint],
                             validation_data=val_data)
 
+        return 0
+
     else:
 
         print('Wrong method')
-        return 0
-
+        return 1
 
 
 def classify(input_shape, test_dir):
