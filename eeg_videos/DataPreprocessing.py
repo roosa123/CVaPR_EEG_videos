@@ -349,7 +349,7 @@ def split_data(directory, final_directory, train_split):
 
     if not os.path.exists(directory):
         print('Not such a directory')
-        return 0
+        return 1
 
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
@@ -388,6 +388,7 @@ def split_data(directory, final_directory, train_split):
                 os.makedirs(temp_path_test)
             copy(directory + '\\' + str(dirs[file[0]]) + '\\' + name, temp_path_test)
 
+    print('Train set located in: ', set_path)
     return set_path, set_path_test
 
 
@@ -413,7 +414,7 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
 
     if not os.path.exists(directory):
         print('Wrong directory')
-        return 0
+        return 1
 
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
@@ -433,7 +434,7 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
 
     if k > (0.2 * nr_files):
         print('K value should be lower than 20% of number of data in sets!')
-        return 0
+        return 1
 
     for i in range(nr_files):
         tab_nr.append(i)
@@ -445,7 +446,7 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
         tab_nr_shuffle = tab_nr
     else:
         print('Wrong method')
-        return 0
+        return 1
 
     mod = nr_files % k
     nr_sets = int(nr_files / k)
@@ -490,6 +491,7 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
                     os.makedirs(temp_path)
                 copy(directory + '\\' + str(dirs[file[0]]) + '\\' + name, temp_path)
 
+        print('Sets for iteration ', i+1, 'prepared. Saved into: ', set_path, set_path_test)
         ch_point = k_tem + ch_point
         directories.append(set_path)
         test_directories.append(set_path_test)
