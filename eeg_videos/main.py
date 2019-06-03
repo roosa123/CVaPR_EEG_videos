@@ -9,8 +9,8 @@ if __name__ == '__main__':
                     directory='..\\DEAP\\train\\')
     print('Data has been successfully prepocessed and saved. Attempting to split it into training and test set...')
     train_split = 0.7
-    train_set, test_set = split_data(directory='..\\DEAP\\train\\',
-                                     final_directory='..\\DEAP\\SETS\\',
+    train_set, test_set = split_data(directory='..\\DEAP\\train',
+                                     final_directory='..\\DEAP\\SETS',
                                      train_split=train_split)
     print('Data has been successfully split into two sets. Attempting to train build the model...')
     in_shape = (120, 120, 4)
