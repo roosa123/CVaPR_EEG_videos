@@ -476,7 +476,6 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
         for nr_of_file in test_files:
             file = files[nr_of_file]
             name = str(file[1])
-            print(file)
             temp_path_test = set_path_test + "\\" + str(dirs[file[0]])
             if not os.path.exists(temp_path_test):
                 os.makedirs(temp_path_test)
