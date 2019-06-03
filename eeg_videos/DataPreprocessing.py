@@ -158,6 +158,9 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
                 freqs, ps = eeg.computeFFT(data, fs=fs)
                 idx = np.argsort(freqs)
 
+                plt.plot(freqs[idx], ps[idx])
+                plt.title(label=(files[i] + ' video: ' + str(j + 1) + ' chanel: ' + str(k + 1)))
+                plt.show()
 
                 # PSD
                 # calculate PSD using Welch's method. Although better approach is to use multitaper algorithm,
@@ -166,6 +169,7 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
 
                 psds, freqs = psd_array_welch(data, sfreq=fs, n_per_seg=7, n_fft=np.shape(data)[0])
 
+                plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
                 plt.show()
                 # 1. find average band powers (for alpha, beta, gamma and theta bands)
                 freq_bands = {              # upper and lower limits of all the needed bands
