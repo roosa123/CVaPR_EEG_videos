@@ -50,8 +50,6 @@ def train(model, directory, batch_size, input_shape, validation_split, method, k
     """
     This function prepares the data generators (cool stuff, which will load the data from the
     hard drive dynamically, during training) and then - the coolest thing - trains the network.
-    The coolest training can be maintained using Kfold method on prepared data-sets or simple one using one data set
-    separated from
     :param model: model
     :param directory: the directory from which data should be loaded
     :param batch_size: size of the batch of samples
@@ -60,13 +58,13 @@ def train(model, directory, batch_size, input_shape, validation_split, method, k
     :param method: specifying method of maintaining input data and training (Kfold, simple)
     :param k: (optional, default 200) parameter k for Kfold method
     :param train_split: (optional, default 0.9) percentage of data used for training
-    :return function returns test directory/ies for prosecuted training
+    :return 
 
     """
 
     if method == 'kfold':
 
-        final_directory = '..\\DEAP\\sets_kfold\\'
+        final_directory = '..\\DEAP\\sets_kfold'
         directories, validation_directories = kfold_data_sets(directory=directory,
                                                               final_directory=final_directory,
                                                               k=k,
