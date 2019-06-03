@@ -81,7 +81,12 @@ class Iterator(Sequence):
         for subdir in classes:
             if self.split is not None:
                 all_files = self.list_valid(directory, subdir, self.extensions)
-                valid_files, actual_classes = all_files[self.split[0] * len(all_files):self.split[1] * len(all_files)]
+
+                idx_upper = int(self.split[1] * len(all_files[0]))
+                idx_lower = int(self.split[0] * len(all_files[0]))
+
+                valid_files = all_files[0][idx_lower:idx_upper]
+                actual_classes = all_files[1][idx_lower:idx_upper]
             else:
                 valid_files, actual_classes = self.list_valid(directory, subdir, self.extensions)
 
