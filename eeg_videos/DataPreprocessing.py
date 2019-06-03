@@ -4,6 +4,8 @@ import os
 import _pickle as cPickle
 import matplotlib.pyplot as plt
 # from scipy.stats import frechet_r_gen
+import random
+from shutil import copy
 
 import EEG.EEG.eeg as eeg
 from mne.time_frequency import psd_array_welch
@@ -81,7 +83,7 @@ def load_data():
         # ----------------------------------------------------------
 
     print(len(list_of_labels))
-    print(len(list_of_data))
+    print(len(list_of_data), len(list_of_data[0]), len(list_of_data[0][0]))
 
     return list_of_labels, list_of_data, files
 
@@ -135,7 +137,7 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
     for i in range(len(list_of_data)):
         for j in range(len(list_of_data[i])):
             # prepare the array for the average band powers - we know, that we are supposed to have 9x9 matrix of
-            # the real or estiamted data, and the average band power will be calculated in
+            # the real or estiamated data, and the average band power will be calculated in
             # 4 bands (alpha, beta, gamma, theta) - so the size of the array will be (9, 9, 4)
             avg_band_power = np.zeros((9, 9, 4))
             for k in range(len(list_of_data[i][j])):
@@ -156,19 +158,15 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
                 freqs, ps = eeg.computeFFT(data, fs=fs)
                 idx = np.argsort(freqs)
 
-                # plt.plot(freqs[idx], ps[idx])
-                # plt.title(label=(files[i] + ' video: ' + str(j + 1) + ' chanel: ' + str(k + 1)))
-                # plt.show()
 
                 # PSD
                 # calculate PSD using Welch's method. Although better approach is to use multitaper algorithm,
                 # but firstly, it is much slower than Welch's method. Secondly, our data is already
                 # cleaned and preprocessed, so both methods probably will give similar results
+
                 psds, freqs = psd_array_welch(data, sfreq=fs, n_per_seg=7, n_fft=np.shape(data)[0])
 
-                # plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
-                # plt.show()
-
+                plt.show()
                 # 1. find average band powers (for alpha, beta, gamma and theta bands)
                 freq_bands = {              # upper and lower limits of all the needed bands
                     'alpha': [8, 13],
@@ -197,6 +195,8 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
                 # but in the correct position - one of those, which are supposed to contain data from electrodes,
                 # already listed in channel_positions variable!
                 avg_band_power[channel_positions[k][0]][channel_positions[k][1]] = avg_power
+
+                print('\t\tAvg band pow for current done')
 
             # 2. calculate unknown points in the feature matrix
             # start from the middle, so the matrix filling won't ever start from a place surrounded by zeros
@@ -285,6 +285,8 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
 
                 cnt += 1
 
+            print('\t\t2 done')
+
             # now now, get ready for interpolation xD
             # first, we need the data to be stored in the 1D structure for single channel - so we can save the data
             # in the 2D array, from which we can then obtain the vector of values corresponding to the specific channel
@@ -322,5 +324,171 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
                   + str(i).zfill(2) + str(j).zfill(2) + '.npy')
 
 
-def split_data(test_split):
-    raise NotImplementedError('Implement me :)')
+def split_data(directory, final_directory, train_split):
+    """
+
+    Function for splitting data randomly into two sets - for training and testing.
+    Function can be used as testing data generator.
+
+    :param directory: path to files - should contain separated directories for each class
+    :param final_directory: path for writing files - in which training and testing sets will occur
+    :param train_split: (between 0-1) border in which data set should be splitted
+    :return:
+    """
+    files = []
+    dirs = []
+    tab_nr = []
+    nr_files = 0
+
+    set_path = final_directory + "\\" + 'TRAIN'
+    set_path_test = final_directory + "\\" + 'TEST'
+
+    if not os.path.exists(directory):
+        print('Not such a directory')
+        return 0
+
+    if not os.path.exists(final_directory):
+        os.makedirs(final_directory)
+
+    for _, a, _ in os.walk(directory):
+        dirs = a
+        break
+
+    for i, d in enumerate(dirs):
+        tem_files = []
+        for (_, _, tem_file) in os.walk(directory + '\\' + d):
+            tem_files.extend(tem_file)
+        for file in tem_files:
+            files.append([i, file])
+            # Saving label and filename
+            nr_files += 1
+
+    for i in range(nr_files):
+        tab_nr.append(i)
+
+    random.shuffle(tab_nr)
+
+    train_amount = int(nr_files * train_split)
+
+    for i in range(nr_files):
+        file = files[tab_nr[i]]
+        name = str(file[1])
+        if i < train_amount:
+            temp_path = set_path + "\\" + str(dirs[file[0]])
+            if not os.path.exists(temp_path):
+                os.makedirs(temp_path)
+            copy(directory + '\\' + str(dirs[file[0]]) + '\\' + name, temp_path)
+        else:
+            temp_path_test = set_path_test + "\\" + str(dirs[file[0]])
+            if not os.path.exists(temp_path_test):
+                os.makedirs(temp_path_test)
+            copy(directory + '\\' + str(dirs[file[0]]) + '\\' + name, temp_path_test)
+
+    return set_path, set_path_test
+
+
+def kfold_data_sets(directory, final_directory, k,  method='random_var'):
+    """
+    Function for preparing iteration sets of data for using K-fold technique with
+    random/straight choice.
+
+    :param directory: path to files - should contain separated directories for each class
+    :param final_directory: path for writing files - in which sets in separated folders will occur
+    :param k: refers to number of training per iteration (all_samples - k -> training samples)
+    :param  method: 'random'/ 'simple' training sets selection
+    :return: list of directories to particular sets (for training and testing)
+    """
+
+    files = []
+    dirs = []
+    directories = []
+    test_directories = []
+    tab_nr = []
+    nr_files = 0
+    ch_point = 0
+
+    if not os.path.exists(directory):
+        print('Wrong directory')
+        return 0
+
+    if not os.path.exists(final_directory):
+        os.makedirs(final_directory)
+
+    for _, a, _ in os.walk(directory):
+        dirs = a
+        break
+
+    for i, d in enumerate(dirs):
+        tem_files = []
+        for (_, _, tem_file) in os.walk(directory + '\\' + d):
+            tem_files.extend(tem_file)
+        for file in tem_files:
+            files.append([i, file])
+            # Saving label and filename
+            nr_files += 1
+
+    if k > (0.2 * nr_files):
+        print('K value should be lower than 20% of number of data in sets!')
+        return 0
+
+    for i in range(nr_files):
+        tab_nr.append(i)
+
+    if method == 'random_var':
+        random.shuffle(tab_nr)
+        tab_nr_shuffle = tab_nr
+    elif method == 'simple':
+        tab_nr_shuffle = tab_nr
+    else:
+        print('Wrong method')
+        return 0
+
+    mod = nr_files % k
+    nr_sets = int(nr_files / k)
+
+    for i in range(nr_sets):
+
+        temp_files = files.copy()
+        test_files = []
+        set_path = final_directory + "\\" + 'ITER_' + str(i + 1)
+
+        set_path_test = final_directory + "\\" + 'TEST_ITER' + str(i + 1)
+
+        if not os.path.exists(set_path):
+            os.makedirs(set_path)
+        if not os.path.exists(set_path_test):
+            os.makedirs(set_path_test)
+
+        k_tem = k
+        if i == 0 and mod != 0:
+            k_tem = mod
+
+        # Choosing test samples
+        for j in range(ch_point, k_tem + ch_point):
+            test_files.append(tab_nr_shuffle[j])
+            temp_files[tab_nr_shuffle[j]] = [0, 0]
+
+        # Saving test samples
+        for nr_of_file in test_files:
+            file = files[nr_of_file]
+            name = str(file[1])
+            temp_path_test = set_path_test + "\\" + str(dirs[file[0]])
+            if not os.path.exists(temp_path_test):
+                os.makedirs(temp_path_test)
+            copy(directory + '\\' + str(dirs[file[0]]) + '\\' + name, temp_path_test)
+
+        # Saving training samples
+        for file in temp_files:
+            if file != [0, 0]:
+                name = str(file[1])
+                temp_path = set_path + "\\" + str(dirs[file[0]])
+                if not os.path.exists(temp_path):
+                    os.makedirs(temp_path)
+                copy(directory + '\\' + str(dirs[file[0]]) + '\\' + name, temp_path)
+
+        ch_point = k_tem + ch_point
+        directories.append(set_path)
+        test_directories.append(set_path_test)
+
+    return directories, test_directories
+
