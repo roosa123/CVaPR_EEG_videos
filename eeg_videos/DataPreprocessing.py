@@ -36,6 +36,11 @@ def load_data():
         - 1 - Boredom:     Val < 5 Arousal < 5
         - 2 - Excitement:  Val > 5 Arousal > 5
         - 3 - Frustration: Val < 5 Arousal > 5
+    In order to improve training results, 'strong' samples are being distinguished from the full set of data.
+    Strong sample refers to one having both valence and arousal values close to the limits of the scale.
+    For this case:
+        Val / Arousal < 0.8 or Val / Arousal > 8.2
+
     """
     path = '../DEAP/data_preprocessed_python'
     list_of_labels = []
@@ -52,7 +57,7 @@ def load_data():
 
         labels = participant_base['labels']
         n, _ = labels.shape
-        labels2 = np.zeros([n, 2])
+        labels2 = np.zeros([n, 3])
 
         # States - labels IMPORTANT
         # 0 - Meditation  Val > 5 Arousal < 5
@@ -60,20 +65,24 @@ def load_data():
         # 2 - Excitement  Val > 5 Arousal > 5
         # 3 - Frustration Val < 5 Arousal > 5
 
-        for i in range(1, n + 1):
-            labels2[i - 1, 0] = i
-            curr_valence = labels[i - 1, 0]
-            curr_arousal = labels[i - 1, 1]
+        for i in range(n):
+            labels2[i, 0] = i
+            curr_valence = labels[i, 0]
+            curr_arousal = labels[i, 1]
             if curr_valence > 5:
                 if curr_arousal <= 5:
-                    labels2[i - 1, 1] = 0
+                    labels2[i, 1] = 0
                 else:
-                    labels2[i - 1, 1] = 2
+                    labels2[i, 1] = 2
             else:
                 if curr_arousal <= 5:
-                    labels2[i - 1, 1] = 1
+                    labels2[i, 1] = 1
                 else:
-                    labels2[i - 1, 1] = 3
+                    labels2[i, 1] = 3
+
+            if curr_valence > 8.2 or curr_valence < 0.8:
+                if curr_arousal > 8.2 or curr_arousal < 0.8:
+                    labels2[i, 2] = 1
 
         # -------------- Lists for labels and data------------------
 
@@ -401,7 +410,7 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
 
     :param directory: path to files - should contain separated directories for each class
     :param final_directory: path for writing files - in which sets in separated folders will occur
-    :param k: refers to number of training per iteration (all_samples - k -> training samples)
+    :param k: refers to number of training sets
     :param  method: 'random'/ 'simple' training sets selection
     :return: list of directories to particular sets (for training and testing)
     """
@@ -440,10 +449,6 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
             files.append([i, file])
             # Saving label and filename
             nr_files += 1
-
-    if k > (0.2 * nr_files):
-        print('K value should be lower than 20% of number of data in sets!')
-        return 1
 
     for i in range(nr_files):
         tab_nr.append(i)
