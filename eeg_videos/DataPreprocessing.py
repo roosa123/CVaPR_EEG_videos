@@ -5,7 +5,7 @@ import _pickle as cPickle
 import matplotlib.pyplot as plt
 # from scipy.stats import frechet_r_gen
 import random
-from shutil import copy
+from shutil import copy, rmtree
 
 import EEG.EEG.eeg as eeg
 from mne.time_frequency import psd_array_welch
@@ -160,7 +160,7 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
 
                 plt.plot(freqs[idx], ps[idx])
                 plt.title(label=(files[i] + ' video: ' + str(j + 1) + ' chanel: ' + str(k + 1)))
-                plt.show()
+                # plt.show()
 
                 # PSD
                 # calculate PSD using Welch's method. Although better approach is to use multitaper algorithm,
@@ -170,7 +170,8 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
                 psds, freqs = psd_array_welch(data, sfreq=fs, n_per_seg=7, n_fft=np.shape(data)[0])
 
                 plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
-                plt.show()
+                # plt.show()
+
                 # 1. find average band powers (for alpha, beta, gamma and theta bands)
                 freq_bands = {              # upper and lower limits of all the needed bands
                     'alpha': [8, 13],
@@ -323,9 +324,8 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
             out = np.rollaxis(np.rollaxis(np.array(out), 2), 2)
 
             # ufff, done. Save the ready sample :)
-            np.save(cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '.npy', np.array(out))
-            print('Sample successfully processed and saved into ' + cur_dir + '\\'
-                  + str(i).zfill(2) + str(j).zfill(2) + '.npy')
+            np.save(cur_dir + '\\' + str(i) + str(j) + '.npy', np.array(out))
+            print('Sample successfully processed and saved into ' + cur_dir + '\\' + str(i) + str(j) + '.npy')
 
 
 def split_data(directory, final_directory, train_split):
@@ -351,8 +351,10 @@ def split_data(directory, final_directory, train_split):
         print('Not such a directory')
         return 1
 
-    if not os.path.exists(final_directory):
-        os.makedirs(final_directory)
+    if os.path.exists(final_directory):
+        rmtree(final_directory)
+
+    os.makedirs(final_directory)
 
     for _, a, _ in os.walk(directory):
         dirs = a
@@ -416,8 +418,15 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
         print('Wrong directory')
         return 1
 
-    if not os.path.exists(final_directory):
+    if os.path.exists(final_directory):
+        rmtree(final_directory)
+
+    os.makedirs(final_directory)
+
+    '''
+    if os.path.exists(final_directory):
         os.makedirs(final_directory)
+    '''
 
     for _, a, _ in os.walk(directory):
         dirs = a
@@ -447,9 +456,18 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
     else:
         print('Wrong method')
         return 1
-
+    '''
+    Alternative k definition
     mod = nr_files % k
     nr_sets = int(nr_files / k)
+    '''
+    '''
+    Simple k definition 
+    '''
+    mod = nr_files % k
+    nr_files = nr_files - mod
+    nr_sets = k
+    nr_samples = int(nr_files / k)
 
     for i in range(nr_sets):
 
@@ -464,16 +482,19 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
         if not os.path.exists(set_path_test):
             os.makedirs(set_path_test)
 
-        k_tem = k
+        k_tem = nr_samples
+        # k_tem = k
+
         if i == 0 and mod != 0:
-            k_tem = mod
+            k_tem = mod + nr_samples
+            # k_tem = mod + k
 
         # Choosing test samples
         for j in range(ch_point, k_tem + ch_point):
             test_files.append(tab_nr_shuffle[j])
             temp_files[tab_nr_shuffle[j]] = [0, 0]
 
-        # Saving test samples
+        # Saving validation samples
         for nr_of_file in test_files:
             file = files[nr_of_file]
             name = str(file[1])
