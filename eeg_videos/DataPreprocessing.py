@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import os
-import _pickle as cPickle
+import _pickle as c_pickle
 import matplotlib.pyplot as plt
 # from scipy.stats import frechet_r_gen
 import random
@@ -52,7 +52,7 @@ def load_data():
 
     for file in files:
 
-        participant_base = cPickle.load(open(path + '/' + file, 'rb'), encoding='latin1')
+        participant_base = c_pickle.load(open(path + '/' + file, 'rb'), encoding='latin1')
         # ----------Labels - four discrete  states---------------
 
         labels = participant_base['labels']
@@ -80,8 +80,8 @@ def load_data():
                 else:
                     labels2[i, 1] = 3
 
-            if curr_valence > 8.2 or curr_valence < 0.8:
-                if curr_arousal > 8.2 or curr_arousal < 0.8:
+            if curr_valence > 7 or curr_valence < 3:
+                if curr_arousal > 7 or curr_arousal < 3:
                     labels2[i, 2] = 1
 
         # -------------- Lists for labels and data------------------
@@ -145,6 +145,10 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
 
     for i in range(len(list_of_data)):
         for j in range(len(list_of_data[i])):
+            # omit 'weak' samples
+            if list_of_labels[i][j][2] < 0.5:
+                continue
+
             # prepare the array for the average band powers - we know, that we are supposed to have 9x9 matrix of
             # the real or estiamated data, and the average band power will be calculated in
             # 4 bands (alpha, beta, gamma, theta) - so the size of the array will be (9, 9, 4)
@@ -333,8 +337,9 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
             out = np.rollaxis(np.rollaxis(np.array(out), 2), 2)
 
             # ufff, done. Save the ready sample :)
-            np.save(cur_dir + '\\' + str(i) + str(j) + '.npy', np.array(out))
-            print('Sample successfully processed and saved into ' + cur_dir + '\\' + str(i) + str(j) + '.npy')
+            np.save(cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '.npy', np.array(out))
+            print('Sample successfully processed and saved into '
+                  + cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '.npy')
 
 
 def split_data(directory, final_directory, train_split):
@@ -523,4 +528,3 @@ def kfold_data_sets(directory, final_directory, k,  method='random_var'):
         test_directories.append(set_path_test)
 
     return directories, test_directories
-
