@@ -147,12 +147,17 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
         for j in range(len(list_of_data[i])):
             # omit 'weak' samples
             if list_of_labels[i][j][2] < 0.5:
-                continue
+                # 25% of chance that a weak sample will be in the final dataset
+                # 75% of chance that it will be omitted
+                if not random.uniform(0.0, 1.0) <= 0.25:
+                    continue
 
             # prepare the array for the average band powers - we know, that we are supposed to have 9x9 matrix of
             # the real or estiamated data, and the average band power will be calculated in
             # 4 bands (alpha, beta, gamma, theta) - so the size of the array will be (9, 9, 4)
             avg_band_power = np.zeros((9, 9, 4))
+            avg_band_power_aug = np.zeros((9, 9, 4))
+
             for k in range(len(list_of_data[i][j])):
                 print('Processing sample %d, row %d, column %d...' % (i, j, k))
                 data = list_of_data[i][j][k]
@@ -173,155 +178,30 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
 
                 plt.plot(freqs[idx], ps[idx])
                 plt.title(label=(files[i] + ' video: ' + str(j + 1) + ' chanel: ' + str(k + 1)))
-                # plt.show()
+                plt.show()
 
-                # PSD
-                # calculate PSD using Welch's method. Although better approach is to use multitaper algorithm,
-                # but firstly, it is much slower than Welch's method. Secondly, our data is already
-                # cleaned and preprocessed, so both methods probably will give similar results
+                # following functions encapsulate the process of obtaining average band power
+                # as the results of computations, the vector of average band powers
+                # in alpha, beta, gamma and theta bands is obtained
+                avg_power = get_avg_band_power_single_channel(data, fs)
 
-                psds, freqs = psd_array_welch(data, sfreq=fs, n_per_seg=7, n_fft=np.shape(data)[0])
-
-                plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
-                # plt.show()
-
-                # 1. find average band powers (for alpha, beta, gamma and theta bands)
-                freq_bands = {              # upper and lower limits of all the needed bands
-                    'alpha': [8, 13],
-                    'beta': [13, 30],
-                    'gamma': [30, 40],
-                    'theta': [4, 8]
-                }
-
-                freq_res = freqs[1] - freqs[0]      # frequency resolution
-                avg_power = []                      # we have to store the avg band power somewhere...
-
-                # calculate avg band power (absolute, not relative - we don't need percents) in each of the bands
-                # The absolute delta power is equal to the area under the plot of already calculated PSD.
-                # And as we know, this can be obtained by integrating. As we don't have any formula, which we can
-                # integrate to obtain this area, we need to approximate it. As suggested in
-                # https://raphaelvallat.com/bandpower.html, let's choose Simpson's method, which is realying on
-                # decomposition of the area into several parabola and then summing up the area of these parabola.
-                for band in ['alpha', 'beta', 'gamma', 'theta']:        # maybe strange, but definitely readable xD
-                    # find indices, which satisfy the limits of the specific band
-                    idx = np.logical_and(freqs >= freq_bands[band][0], freqs <= freq_bands[band][1])
-                    avg = simps(psds[idx], dx=freq_res)                    # integrals, sweet integrals <3
-                    avg_power.append(avg)                                  # success, save the computed value!
+                # lets slightly extend the dataset and add a random noise to the sample
+                data_aug = augment_signal(data)
+                avg_power_aug = get_avg_band_power_single_channel(data_aug, fs)
 
                 # as long as we consider k-th channel, we should save the vector of
                 # the already computed values of avg band powers into our previously prepared array
                 # but in the correct position - one of those, which are supposed to contain data from electrodes,
                 # already listed in channel_positions variable!
                 avg_band_power[channel_positions[k][0]][channel_positions[k][1]] = avg_power
+                avg_band_power_aug[channel_positions[k][0]][channel_positions[k][1]] = avg_power_aug
 
-                print('\t\tAvg band pow for current done')
+                print('\t\tAvg band pow for current channel done')
 
-            # 2. calculate unknown points in the feature matrix
-            # start from the middle, so the matrix filling won't ever start from a place surrounded by zeros
-            vertical = False
-            forward = True
-            x, y = 4, 4
-            max_x = x + 1
-            min_x = x - 1
-            max_y = y + 1
-            min_y = y - 1
-            matrix_len = 9
-
-            cnt = 0
-
-            #              __,aaPPPPPPPPaa,__
-            #          ,adP"""'          `""Yb,_
-            #       ,adP'                     `"Yb,
-            #     ,dP'     ,aadPP"""""YYba,_     `"Y,
-            #    ,P'    ,aP"'            `""Ya,     "Y,
-            #   ,P'    aP'     _________     `"Ya    `Yb,
-            #  ,P'    d"    ,adP""""""""Yba,    `Y,    "Y,
-            # ,d'   ,d'   ,dP"            `Yb,   `Y,    `Y,
-            # d'   ,d'   ,d'    ,dP""Yb,    `Y,   `Y,    `b
-            # 8    d'    d'   ,d"      "b,   `Y,   `8,    Y,
-            # 8    8     8    d'    _   `Y,   `8    `8    `b
-            # 8    8     8    8     8    `8    8     8     8
-            # 8    Y,    Y,   `b, ,aP     P    8    ,P     8
-            # I,   `Y,   `Ya    """"     d'   ,P    d"    ,P
-            # `Y,   `8,    `Ya         ,8"   ,P'   ,P'    d'
-            #  `Y,   `Ya,    `Ya,,__,,d"'   ,P'   ,P"    ,P
-            #   `Y,    `Ya,     `""""'     ,P'   ,d"    ,P'
-            #    `Yb,    `"Ya,_          ,d"    ,P'    ,P'
-            #      `Yb,      ""YbaaaaaadP"     ,P'    ,P'   Normand
-            #        `Yba,                   ,d'    ,dP'    Veilleux
-            #           `"Yba,__       __,adP"     dP"
-            #               `"""""""""""""'
-            #
-            # in plain English: fill the empty cells in the matrix in the spiral order, beginning from the middle
-            while cnt < matrix_len * matrix_len:
-                if not np.any((channel_positions[:] == [y, x]).all(axis=1)):
-                    for z in range(4):
-                        k = 0
-                        a = (avg_band_power[y + 1][x][z] if y + 1 < 9 else 0.0)
-                        k += 0 if a == 0.0 else 1
-                        b = (avg_band_power[y - 1][x][z] if y - 1 > -1 else 0.0)
-                        k += 0 if a == 0.0 else 1
-                        c = (avg_band_power[y][x + 1][z] if x + 1 < 9 else 0.0)
-                        k += 0 if a == 0.0 else 1
-                        d = (avg_band_power[y][x - 1][z] if x - 1 > -1 else 0.0)
-                        k += 0 if a == 0.0 else 1
-
-                        avg_band_power[y][x][z] = (a + b + c + d) / k if k != 0.0 else 0.0
-
-                if not vertical:
-                    if forward:
-                        if x < max_x:
-                            x += 1
-                        else:
-                            vertical = True
-                            y += 1
-                            max_x += 1
-                    else:
-                        if x > min_x:
-                            x -= 1
-                        else:
-                            vertical = True
-                            y -= 1
-                            min_x -= 1
-                else:
-                    if forward:
-                        if y < max_y:
-                            y += 1
-                        else:
-                            vertical = False
-                            forward = False
-                            x -= 1
-                            max_y += 1
-                    else:
-                        if y > min_y:
-                            y -= 1
-                        else:
-                            vertical = False
-                            forward = True
-                            x += 1
-                            min_y -= 1
-
-                cnt += 1
-
-            print('\t\t2 done')
-
-            # now now, get ready for interpolation xD
-            # first, we need the data to be stored in the 1D structure for single channel - so we can save the data
-            # in the 2D array, from which we can then obtain the vector of values corresponding to the specific channel
-            avg_bands = avg_band_power.reshape((81, 4))
-            # coordinate vector in the X dimension - Xs' of the points, in which we should interpolate the values
-            nx = np.linspace(np.min(points[:, 1]), np.max(points[:, 1]), num=120)
-            # coordinate vector in the Y dimension - Ys' of the points, in which we should interpolate the values
-            ny = np.linspace(np.min(points[:, 0]), np.max(points[:, 0]), num=120)
-            # coordinate matrices from coordinate vectors
-            grid_x, grid_y = np.meshgrid(nx, ny)
-
-            out = []
-            for band in range(4):
-                # Wooohooo, here we go! Interpolate it!
-                grid = griddata(points, avg_bands[:, band], (grid_x, grid_y), fill_value=0.0, method='cubic')
-                # save the resulting matrix
-                out.append(grid)
+            # basing on the average band power, let's try to generate samples exposing
+            # spatial distribution of the power of the signal
+            out = prepare_sample(avg_band_power, channel_positions=channel_positions, points=points)
+            out_aug = prepare_sample(avg_band_power_aug, channel_positions=channel_positions, points=points)
 
             # the data is supposed to be saved in the directory, which will indicate the class of the sample - ie.
             # the directory's name should be equal to the label assigned to the sample's class
@@ -335,11 +215,175 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
             # because convolutions and pooling will quickly downsample it below zero :(
             # so we should reshape it
             out = np.rollaxis(np.rollaxis(np.array(out), 2), 2)
+            out_aug = np.rollaxis(np.rollaxis(np.array(out_aug), 2), 2)
 
             # ufff, done. Save the ready sample :)
-            np.save(cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '.npy', np.array(out))
-            print('Sample successfully processed and saved into '
-                  + cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '.npy')
+            np.save(cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '.npy', out)
+            np.save(cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '_A' + '.npy', out_aug)
+
+            print('Samples successfully processed and saved into '
+                  + cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '.npy'
+                  ' and ' + cur_dir + '\\' + str(i).zfill(2) + str(j).zfill(2) + '_A' + '.npy')
+
+
+def get_avg_band_power_single_channel(signal, fs):
+    # PSD
+    # calculate PSD using Welch's method. Although better approach is to use multitaper algorithm,
+    # but firstly, it is much slower than Welch's method. Secondly, our data is already
+    # cleaned and preprocessed, so both methods probably will give similar results
+
+    psds, freqs = psd_array_welch(signal, sfreq=fs, n_per_seg=7, n_fft=np.shape(signal)[0])
+
+    plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
+    plt.show()
+
+    # 1. find average band powers (for alpha, beta, gamma and theta bands)
+    freq_bands = {  # upper and lower limits of all the needed bands
+        'alpha': [8, 13],
+        'beta': [13, 30],
+        'gamma': [30, 40],
+        'theta': [4, 8]
+    }
+
+    freq_res = freqs[1] - freqs[0]  # frequency resolution
+    avg_power = []  # we have to store the avg band power somewhere...
+
+    # calculate avg band power (absolute, not relative - we don't need percents) in each of the bands
+    # The absolute delta power is equal to the area under the plot of already calculated PSD.
+    # And as we know, this can be obtained by integrating. As we don't have any formula, which we can
+    # integrate to obtain this area, we need to approximate it. As suggested in
+    # https://raphaelvallat.com/bandpower.html, let's choose Simpson's method, which is relying on
+    # decomposition of the area into several parabola and then summing up the area of these parabola.
+    for band in ['alpha', 'beta', 'gamma', 'theta']:  # maybe strange, but definitely readable xD
+        # find indices, which satisfy the limits of the specific band
+        idx = np.logical_and(freqs >= freq_bands[band][0], freqs <= freq_bands[band][1])
+        avg = simps(psds[idx], dx=freq_res)  # integrals, sweet integrals <3
+        avg_power.append(avg)  # success, save the computed value!
+
+    return avg_power
+
+
+def prepare_sample(avg_band_power, channel_positions, points):
+    # 2. calculate unknown points in the feature matrix
+    # start from the middle, so the matrix filling won't ever start from a place surrounded by zeros
+    vertical = False
+    forward = True
+    x, y = 4, 4
+    max_x = x + 1
+    min_x = x - 1
+    max_y = y + 1
+    min_y = y - 1
+    matrix_len = 9
+
+    cnt = 0
+
+    #              __,aaPPPPPPPPaa,__
+    #          ,adP"""'          `""Yb,_
+    #       ,adP'                     `"Yb,
+    #     ,dP'     ,aadPP"""""YYba,_     `"Y,
+    #    ,P'    ,aP"'            `""Ya,     "Y,
+    #   ,P'    aP'     _________     `"Ya    `Yb,
+    #  ,P'    d"    ,adP""""""""Yba,    `Y,    "Y,
+    # ,d'   ,d'   ,dP"            `Yb,   `Y,    `Y,
+    # d'   ,d'   ,d'    ,dP""Yb,    `Y,   `Y,    `b
+    # 8    d'    d'   ,d"      "b,   `Y,   `8,    Y,
+    # 8    8     8    d'    _   `Y,   `8    `8    `b
+    # 8    8     8    8     8    `8    8     8     8
+    # 8    Y,    Y,   `b, ,aP     P    8    ,P     8
+    # I,   `Y,   `Ya    """"     d'   ,P    d"    ,P
+    # `Y,   `8,    `Ya         ,8"   ,P'   ,P'    d'
+    #  `Y,   `Ya,    `Ya,,__,,d"'   ,P'   ,P"    ,P
+    #   `Y,    `Ya,     `""""'     ,P'   ,d"    ,P'
+    #    `Yb,    `"Ya,_          ,d"    ,P'    ,P'
+    #      `Yb,      ""YbaaaaaadP"     ,P'    ,P'   Normand
+    #        `Yba,                   ,d'    ,dP'    Veilleux
+    #           `"Yba,__       __,adP"     dP"
+    #               `"""""""""""""'
+    #
+    # in plain English: fill the empty cells in the matrix in the spiral order, beginning from the middle
+    while cnt < matrix_len * matrix_len:
+        if not np.any((channel_positions[:] == [y, x]).all(axis=1)):
+            for z in range(4):
+                k = 0
+                a = (avg_band_power[y + 1][x][z] if y + 1 < 9 else 0.0)
+                k += 0 if a == 0.0 else 1
+                b = (avg_band_power[y - 1][x][z] if y - 1 > -1 else 0.0)
+                k += 0 if a == 0.0 else 1
+                c = (avg_band_power[y][x + 1][z] if x + 1 < 9 else 0.0)
+                k += 0 if a == 0.0 else 1
+                d = (avg_band_power[y][x - 1][z] if x - 1 > -1 else 0.0)
+                k += 0 if a == 0.0 else 1
+
+                avg_band_power[y][x][z] = (a + b + c + d) / k if k != 0.0 else 0.0
+
+        if not vertical:
+            if forward:
+                if x < max_x:
+                    x += 1
+                else:
+                    vertical = True
+                    y += 1
+                    max_x += 1
+            else:
+                if x > min_x:
+                    x -= 1
+                else:
+                    vertical = True
+                    y -= 1
+                    min_x -= 1
+        else:
+            if forward:
+                if y < max_y:
+                    y += 1
+                else:
+                    vertical = False
+                    forward = False
+                    x -= 1
+                    max_y += 1
+            else:
+                if y > min_y:
+                    y -= 1
+                else:
+                    vertical = False
+                    forward = True
+                    x += 1
+                    min_y -= 1
+
+        cnt += 1
+
+    print('\t\t2 done')
+
+    # 3.
+    # now now, get ready for interpolation xD
+    # first, we need the data to be stored in the 1D structure for single channel - so we can save the data
+    # in the 2D array, from which we can then obtain the vector of values corresponding to the specific channel
+    avg_bands = avg_band_power.reshape((81, 4))
+    # coordinate vector in the X dimension - Xs' of the points, in which we should interpolate the values
+    nx = np.linspace(np.min(points[:, 1]), np.max(points[:, 1]), num=120)
+    # coordinate vector in the Y dimension - Ys' of the points, in which we should interpolate the values
+    ny = np.linspace(np.min(points[:, 0]), np.max(points[:, 0]), num=120)
+    # coordinate matrices from coordinate vectors
+    grid_x, grid_y = np.meshgrid(nx, ny)
+
+    out = []
+    for band in range(4):
+        # Wooohooo, here we go! Interpolate it!
+        grid = griddata(points, avg_bands[:, band], (grid_x, grid_y), fill_value=0.0, method='cubic')
+        # save the resulting matrix
+        out.append(grid)
+
+    return out
+
+
+def augment_signal(signal, snr=20):
+    sig_avg_watts = np.mean(signal ** 2)
+    sig_avg_db = 10 * np.log10(sig_avg_watts)
+
+    noise_avg_db = sig_avg_db - snr
+    noise_avg_watts = 10 ** (noise_avg_db / 10)
+
+    mean_noise = 0
+    return np.random.normal(loc=mean_noise, scale=np.sqrt(noise_avg_watts), size=len(signal))
 
 
 def split_data(directory, final_directory, train_split):
