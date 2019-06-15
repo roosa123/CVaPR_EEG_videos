@@ -97,7 +97,7 @@ def load_data():
     return list_of_labels, list_of_data, files
 
 
-def preprocess_data(list_of_labels, list_of_data, files, directory):
+def preprocess_data(list_of_labels, list_of_data, files, directory, include_weak=False):
     """"
     Data preprocessing. To obtain data in form, which can be easily processed by the neural network,
     the average band power in each channel is mapped into a spatial map (as suggested in Li, Y., Huang, J., Zhou, H.,
@@ -149,7 +149,9 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
             if list_of_labels[i][j][2] < 0.5:
                 # 25% of chance that a weak sample will be in the final dataset
                 # 75% of chance that it will be omitted
-                if not random.uniform(0.0, 1.0) <= 0.25:
+                if not random.uniform(0.0, 1.0) <= 0.25 and not include_weak:
+                    continue
+                elif not include_weak:
                     continue
 
             # prepare the array for the average band powers - we know, that we are supposed to have 9x9 matrix of
@@ -176,9 +178,9 @@ def preprocess_data(list_of_labels, list_of_data, files, directory):
                 freqs, ps = eeg.computeFFT(data, fs=fs)
                 idx = np.argsort(freqs)
 
-                plt.plot(freqs[idx], ps[idx])
-                plt.title(label=(files[i] + ' video: ' + str(j + 1) + ' chanel: ' + str(k + 1)))
-                plt.show()
+                # plt.plot(freqs[idx], ps[idx])
+                # plt.title(label=(files[i] + ' video: ' + str(j + 1) + ' chanel: ' + str(k + 1)))
+                # plt.show()
 
                 # following functions encapsulate the process of obtaining average band power
                 # as the results of computations, the vector of average band powers
@@ -234,8 +236,8 @@ def get_avg_band_power_single_channel(signal, fs):
 
     psds, freqs = psd_array_welch(signal, sfreq=fs, n_per_seg=7, n_fft=np.shape(signal)[0])
 
-    plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
-    plt.show()
+    # plt.plot(freqs[1:np.shape(freqs)[0] - 1], psds[1:np.shape(psds)[0] - 1])
+    # plt.show()
 
     # 1. find average band powers (for alpha, beta, gamma and theta bands)
     freq_bands = {  # upper and lower limits of all the needed bands

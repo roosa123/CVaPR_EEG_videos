@@ -8,7 +8,8 @@ if __name__ == '__main__':
     preprocess_data(data,
                     labels,
                     files,
-                    directory='..\\DEAP\\train\\')
+                    directory='..\\DEAP\\train\\',
+                    include_weak=False)
     print('Data has been successfully prepocessed and saved. Attempting to split it into training and test set...')
     '''
     train_split = 0.7  # Should be between 0 and 1
