@@ -5,6 +5,8 @@
 Lecturer: Krzysztof Kotowski  
 Semester: 1st semester of the MSc studies programme
 
+### Requirements
+
 Let's determine some universal rules and project requirements (listed below):
 
 1. Placing the dataset in the repo directory structure:  
@@ -16,7 +18,7 @@ Let's determine some universal rules and project requirements (listed below):
     * required packages (please extend this list as you will introduce more packages):
         * Keras
         * TensorFlow
-        * NumPy
+        * NumPy (pay attention to the version - latest one has problem with pickling, so use on fo the older ones - suggested is 1.16.2)
         * Matplotlib
         * Pandas
         * MNE
@@ -26,6 +28,11 @@ Let's determine some universal rules and project requirements (listed below):
     * there is a possibilty to use TensorFlow with computation acceleration on GPU. To utilise this feature, please install GPU-accelerated version of TensorFlow (TensorFlow-GPU) and additional necessary tools (CUDA Toolkit and CuDNN), listed in [TensorFlow website](https://www.tensorflow.org/install/gpu), in section Software Requirements
     * pay attention to the versions - TensorFlow **1.13** will work only with CUDA Toolkit **10.0** (and probably higher)
     * make sure you've added CuDNN path to your PATH variable!
+
+### Running the project
+
+1. From the level of IDE, please install all the required packages (and utilities for GPU usage, if you wish) listed above.
+2. Go to directory **eeg_videos** and run script **main.py**
 
 Please extend this file as any new requirements will arise!  
 **That's all, folks! :)**
