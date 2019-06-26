@@ -3,7 +3,7 @@ from eeg_videos.Network import build_model, train, classify
 
 if __name__ == '__main__':
     print('Here we go!')
-    '''
+
     data, labels, files = load_data()
     preprocess_data(data,
                     labels,
@@ -11,7 +11,7 @@ if __name__ == '__main__':
                     directory='..\\DEAP\\train\\',
                     include_weak=False)
     print('Data has been successfully prepocessed and saved. Attempting to split it into training and test set...')
-    '''
+    
     train_split = 0.7  # Should be between 0 and 1
     result = split_data(directory='..\\DEAP\\train',
                         final_directory='..\\DEAP\\main_sets',
