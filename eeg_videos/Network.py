@@ -1,9 +1,15 @@
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
 from keras.models import Sequential, load_model
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.callbacks import ModelCheckpoint
 from keras.utils import plot_model
 from eeg_videos.DataGenerator import NpyDataGenerator
 from eeg_videos.DataPreprocessing import normalize, kfold_data_sets, split_data
+from sklearn.metrics import confusion_matrix
+from pandas import DataFrame
+from matplotlib import rcParams
 
 
 def build_model(input_shape):
@@ -144,8 +150,7 @@ def classify(input_shape, test_dir):
 
     """
     This functions attempts to classify samples from the test set.
-    And then...
-    TO BE CONTINUED :)
+    And then creates confusion matrix
     :param input_shape:
     :param test_dir:
     :return:
@@ -160,9 +165,49 @@ def classify(input_shape, test_dir):
 
     output = model.predict_generator(test_data, steps=len(test_data), verbose=1)
 
+    rcParams['toolbar'] = 'None'
+
+    predicted_classes = np.argmax(output, axis=1)
+    true_classes = test_data.classes
+
+    labels = ["Meditation", "Boredom", "Excitement", "Frustration"]
+
+    pred = []
+    true = []
+
+    for i in range(len(predicted_classes)):
+        pred.append(labels[predicted_classes[i]])
+        true.append(labels[true_classes[i]])
+
+    conf_matrix = confusion_matrix(true, pred, labels)
+
+    width, height = conf_matrix.shape
+    annots = np.empty_like(conf_matrix).astype(str)
+
+    sums = np.sum(conf_matrix, axis=1, keepdims=True)
+    percentage = conf_matrix / sums * 100
+
+    for i in range(width):
+        for j in range(height):
+            if i == j:#'%.1f%%\n%d/%d' % (p, c, s)
+                annots[i, j] = ("%.1f%%\n%d/%d" % (percentage[i, j], conf_matrix[i, j], sums[i]))
+            else:
+                annots[i, j] = ("%.1f%%\n%d" % (percentage[i, j], conf_matrix[i, j]))
+
+    conf_matrix = DataFrame(conf_matrix)
+
+    fig, ax = plt.subplots(figsize=(30, 15))
+    plt.tight_layout(pad=2.5, h_pad=2.5, w_pad=2.5, rect=[0.2, 0.3, 1, 1])
+
+    sns.set(font_scale=1.4)
+    sns.heatmap(conf_matrix, annot=annots, fmt='', ax=ax)
+
+    ax.set_xlabel("Predicted", fontsize=30)
+    ax.set_ylabel("Actual", fontsize=30)
+
+    ax.set_xticklabels(labels, rotation=45, fontsize=15)
+    ax.set_yticklabels(labels, rotation=45, fontsize=15)
+
+    plt.savefig('confusion_matrix.jpg')
+
     print(output)
-
-    raise NotImplementedError('Finish me :)')
-
-
-

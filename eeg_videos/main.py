@@ -13,7 +13,7 @@ if __name__ == '__main__':
     print('Data has been successfully prepocessed and saved. Attempting to split it into training and test set...')
     '''
     train_split = 0.7  # Should be between 0 and 1
-    result = split_data(directory='..\\DEAP\\train_zp',
+    result = split_data(directory='..\\DEAP\\train',
                         final_directory='..\\DEAP\\main_sets',
                         train_split=train_split)
     if result == 1:
